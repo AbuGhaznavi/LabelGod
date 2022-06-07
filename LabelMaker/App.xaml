@@ -1,0 +1,15 @@
+﻿<Application x:Class="LabelMaker.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:LabelMaker"
+             StartupUri="Region Select/RegionSelect.xaml"
+             ShutdownMode="OnLastWindowClose">
+    <Application.Resources>
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="AcceptsReturn" Value="False" />
+            <Setter Property="AcceptsTab"    Value="False" />
+            <EventSetter Event="GotFocus"        Handler="SelectAll"/>
+            <EventSetter Event="GotMouseCapture" Handler="SelectAll"/>
+        </Style>
+    </Application.Resources>
+</Application>
