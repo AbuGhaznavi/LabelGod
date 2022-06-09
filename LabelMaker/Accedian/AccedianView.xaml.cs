@@ -407,9 +407,9 @@ namespace LabelMaker.Accedian
 
         private void Search_textBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            DataView dv = dt.DefaultView;
-            dv.RowFilter = string.Format("pn LIKE '%{0}%'", Search_textBox.Text);
-            input_grid.ItemsSource = dv;
+			SandstormMongoDriver driver = new SandstormMongoDriver(SandstormMongoDriver.CONNECTION_STRING);
+			var accedianParts = driver.GetAccedianParts(Search_textBox.Text);
+			input_grid.ItemsSource = accedianParts;
         }
 
         private void ToggleButton_Checked_1(object sender, RoutedEventArgs e)

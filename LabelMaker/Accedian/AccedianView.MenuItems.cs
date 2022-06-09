@@ -13,7 +13,7 @@ using System.Data;
 using System.Data.SqlClient;
 using Npgsql;
 using Renci.SshNet;
-
+using MongoDB.Bson;
 namespace LabelMaker.Accedian
 {
 	public partial class AccedianView : Window
@@ -78,24 +78,45 @@ namespace LabelMaker.Accedian
         private string sql = null;
         string connstring = String.Format("Server={0};" + "User Id={1};Database={2}; Integrated Security = True;", "US-SANDSQL-01.picstelecom.com", "jjohnson@PICSTELECOM.COM", "postgres");
 
-        private void Database_Load()
+
+		public class AccedianPart
+		{
+			public string PartNumber { get; set; }
+			public string PartDescription { get; set; }
+			public string LabelDescription { get; set; }
+
+			public AccedianPart(string _pn, string _pdesc, string _ldesc)
+            {
+				this.PartNumber = _pn;
+				this.PartDescription = _pdesc;
+				this.LabelDescription = _ldesc;
+            }
+
+		}
+
+		private void Database_Load()
         {
-            conn = new NpgsqlConnection(connstring);
+            
             try
             {
-                input_grid.ItemsSource = null;
-                conn.Open();
-                sql = "SELECT * FROM accedian";
-                cmd = new NpgsqlCommand(sql, conn);
-                dt = new DataTable();
-                dt.Load(cmd.ExecuteReader());
-                input_grid.ItemsSource = dt.DefaultView;
-                conn.Close();
+				SandstormMongoDriver driver = new SandstormMongoDriver(SandstormMongoDriver.CONNECTION_STRING);
+				
+				// Set up the intiial column names
+				DataView dataGridView = new DataView();
+				List<AccedianPart> accedianParts = driver.GetAccedianParts();
+				
+
+
+				input_grid.ItemsSource = accedianParts;
+                // input_grid.ItemsSource = dt.DefaultView;
+
+				
+                
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error: " + ex.Message, "Fail", MessageBoxButton.OK);
-                conn.Close();
+                
             }
         }
 
@@ -103,6 +124,37 @@ namespace LabelMaker.Accedian
 		{
 			//username of the account logged in
 			string username = Environment.UserName;
+			
+			string[] pieces = username.Split('.');
+			string valid_name = username;
+			string selected = "";
+			if (pieces.Length > 1)
+            {
+				valid_name = pieces[0];
+            }
+			string domain = valid_name + "." + Environment.UserDomainName;
+			string username_location = "C:\\Users\\" + username + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\AccedianExcel.xlsx";
+			string domain_location = "C:\\Users\\" + domain + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\AccedianExcel.xlsx";
+			string valid_location = "C:\\Users\\" + valid_name + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\AccedianExcel.xlsx";
+
+			if (!File.Exists(domain_location))
+			{
+				selected = domain_location;
+				Console.WriteLine("File exists!");
+			}
+			else if (File.Exists(username_location))
+			{
+				selected = username_location;
+				Console.WriteLine("File exists!");
+			}
+			else if (!File.Exists(valid_location))
+			{
+				selected = valid_location;
+				Console.WriteLine("File exists!");
+			}
+
+
+
 			Microsoft.Office.Interop.Excel.Application xlApp;
 			Microsoft.Office.Interop.Excel.Workbook xlBook;
 			Microsoft.Office.Interop.Excel.Range xlRange;
@@ -111,7 +163,7 @@ namespace LabelMaker.Accedian
 			try
 			{
 				xlApp = new Microsoft.Office.Interop.Excel.Application();
-				xlBook = xlApp.Workbooks.Open("C:\\Users\\" + username + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\AccedianExcel.xlsx");
+				xlBook = xlApp.Workbooks.Open("C:\\Users\\" + selected + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\AccedianExcel.xlsx");
 				xlSheet = xlBook.Worksheets["Sheet1"];
 				xlRange = xlSheet.UsedRange;
 				DataRow row = null;
@@ -139,6 +191,7 @@ namespace LabelMaker.Accedian
 			}
 			catch (Exception ex)
 			{
+
 				Console.WriteLine(ex.Message);
 			}
 		}
@@ -150,6 +203,7 @@ namespace LabelMaker.Accedian
 		/// <param name="e"></param>
 		private void Load_AccedianItem_Click(object sender, RoutedEventArgs e)
 		{
+			
             ExcelLoad = false;
             Database_Load();
 		}
@@ -286,21 +340,25 @@ namespace LabelMaker.Accedian
             }
             else
             {
-                for (int i = 0; i < input_grid.Columns.Count; i++)
-                {
-                    if (i == 1)
-                    {
-                        Part_textBox.Text = rowview[i].ToString();
-                    }
-                    else if (i == 2)
-                    {
-                        PartDesc_textBox.Text = rowview[i].ToString();
-                    }
-                    else if (i == 3)
-                    {
-                        LabelDesc_textBox.Text = rowview[i].ToString();
-                    }
-                }
+				AccedianPart selectedPart = (AccedianPart)input_grid.SelectedItem;
+				//for (int i = 0; i < input_grid.Columns.Count; i++)
+				//{
+				//    if (i == 1)
+				//    {
+				//        Part_textBox.Text = rowview[i].ToString();
+				//    }
+				//    else if (i == 2)
+				//    {
+				//        PartDesc_textBox.Text = rowview[i].ToString();
+				//    }
+				//    else if (i == 3)
+				//    {
+				//        LabelDesc_textBox.Text = rowview[i].ToString();
+				//    }
+				//}
+				Part_textBox.Text = selectedPart.PartNumber;
+				PartDesc_textBox.Text = selectedPart.PartDescription;
+				LabelDesc_textBox.Text = selectedPart.LabelDescription;
             }
 		}
 		#endregion
