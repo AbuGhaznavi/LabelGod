@@ -27,7 +27,8 @@ namespace LabelMaker.Accedian
 
 		public static AccedianView accedianview;
 		public static string username = Environment.UserName;
-		public static string directory = "C:\\Users\\" + username + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\Accedian Label Maker\\";
+		// public static string directory = "C:\\Users\\" + username + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\Accedian Label Maker\\";
+		public static string directory = @"C:\Users\aghaznavi.SANDINTERN-01\source\";
 		public static string save_file_name_path = directory + "AccedianInfo.txt";
 		public static string ten_save_file_name_path = directory + "10Serial.txt";
 		//This file is the database that Bartender uses to read Accedian labels
