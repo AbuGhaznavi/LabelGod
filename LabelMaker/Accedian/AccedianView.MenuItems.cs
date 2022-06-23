@@ -137,7 +137,7 @@ namespace LabelMaker.Accedian
 			string domain_location = "C:\\Users\\" + domain + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\AccedianExcel.xlsx";
 			string valid_location = "C:\\Users\\" + valid_name + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\AccedianExcel.xlsx";
 
-			if (!File.Exists(domain_location))
+			if (File.Exists(domain_location))
 			{
 				selected = domain_location;
 				Console.WriteLine("File exists!");
@@ -147,7 +147,7 @@ namespace LabelMaker.Accedian
 				selected = username_location;
 				Console.WriteLine("File exists!");
 			}
-			else if (!File.Exists(valid_location))
+			else if (File.Exists(valid_location))
 			{
 				selected = valid_location;
 				Console.WriteLine("File exists!");

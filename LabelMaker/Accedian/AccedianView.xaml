@@ -150,6 +150,7 @@
 
         <WrapPanel x:Name="ConsecSNPanel"   Orientation="Horizontal" Grid.Row="5" Margin="5,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" Height="45" Width="auto">
             <Button Content="Save Label Info" Margin="3" Click="Save_MenuItem_Click"/>
+            <Button Content="Load Label Info" Margin="3" Click="Load_MenuItem_Click"/>
         </WrapPanel>
 
     </Grid>

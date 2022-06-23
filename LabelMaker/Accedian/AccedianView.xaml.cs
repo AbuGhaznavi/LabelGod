@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Forms;
+// using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -16,7 +16,7 @@ using System.Data;
 using System.IO;
 using System.Diagnostics;
 using MyPath = System.IO.Path;
-
+using Microsoft.Win32;
 namespace LabelMaker.Accedian
 {
 	/// <summary>
@@ -27,18 +27,23 @@ namespace LabelMaker.Accedian
 
 		public static AccedianView accedianview;
 		public static string username = Environment.UserName;
-		// public static string directory = "C:\\Users\\" + username + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\Accedian Label Maker\\";
-		public static string directory = @"C:\Users\aghaznavi.SANDINTERN-01\source\";
+		public static string directory = "C:\\Users\\" + username + "\\PICS Telecom\\Sandstone Technologies - Sandstone Software Applications\\Label God Resources\\Accedian\\Accedian Label Maker\\";
+		// public static string directory = @"C:\Users\aghaznavi.SANDINTERN-01\source\";
 		public static string save_file_name_path = directory + "AccedianInfo.txt";
 		public static string ten_save_file_name_path = directory + "10Serial.txt";
+
+		// Set a folder to save Accedian records
+		public static string records_location = @"C:\LabelMaker\Records\Accedian\";
 		//This file is the database that Bartender uses to read Accedian labels
 
 		public AccedianView()
 		{
 			try { InitializeComponent(); }
 			catch (Exception ex) { System.Windows.MessageBox.Show("AccedianView\n\n" + ex.ToString()); }
-            Labels.fillComboBoxCountry(Country_comboBox);
-            setRoutedCommands();
+			Labels.fillComboBoxCountry(Country_comboBox);
+			setRoutedCommands();
+			// Create the folder for Accedian Records
+			MainWindow.createDir(records_location);
 		}
 
 		/// <summary>
@@ -73,10 +78,10 @@ namespace LabelMaker.Accedian
 			output_grid.ItemsSource = accedian_list;
 		}
 
-		
+
 
 		#region print stuff
-		
+
 		private void Print_SFPP_button_click(object sender, RoutedEventArgs e)
 		{
 			printPanel.IsEnabled = false;
@@ -92,7 +97,7 @@ namespace LabelMaker.Accedian
 			printFunction("SFP1Label.btbat");
 			printPanel.IsEnabled = true;
 		}
-		
+
 		private void Print_QSFPLR_button_click(object sender, RoutedEventArgs e)
 		{
 			printPanel.IsEnabled = false;
@@ -155,19 +160,19 @@ namespace LabelMaker.Accedian
 			printPanel.IsEnabled = true;
 		}
 
-        private void Print_Recode_Sheet_button_click(object sender, RoutedEventArgs e)
-        {
-            printPanel.IsEnabled = false;
-            Save_MenuItem_L();
-            printFunction("RecodeSheet.btbat");
-            printPanel.IsEnabled = true;
-        }
+		private void Print_Recode_Sheet_button_click(object sender, RoutedEventArgs e)
+		{
+			printPanel.IsEnabled = false;
+			Save_MenuItem_L();
+			printFunction("RecodeSheet.btbat");
+			printPanel.IsEnabled = true;
+		}
 
-        /// <summary>
-        /// Looks for batch file using 
-        /// </summary>
-        /// <param name="printFile">The batch file that is being called to be printed</param>
-        public static void printFunction(string printFile)
+		/// <summary>
+		/// Looks for batch file using 
+		/// </summary>
+		/// <param name="printFile">The batch file that is being called to be printed</param>
+		public static void printFunction(string printFile)
 		{
 			ProcessStartInfo print = new ProcessStartInfo();
 			print.FileName = MyPath.Combine(directory, printFile);
@@ -176,7 +181,7 @@ namespace LabelMaker.Accedian
 			print.RedirectStandardOutput = false;
 			Process.Start(print);
 			System.Windows.MessageBox.Show("Label is being printed...\n\nPlease Wait Juanito!");
-			
+
 		}
 		#endregion
 
@@ -190,8 +195,16 @@ namespace LabelMaker.Accedian
 		{
 			string info = getAllInfo();
 			string serial = getAllSerials();
+			string partAndSerial = getPartNumberAndSerial();
 			File.WriteAllText(save_file_name_path, info);
 			File.WriteAllText(ten_save_file_name_path, serial);
+
+			// Save the record into the accedian folder
+			File.WriteAllText(
+					MyPath.Combine(records_location, partAndSerial + "_AccedianLabelInfo.txt"),
+					info
+				);
+
 		}
 
 		/// <summary>
@@ -207,7 +220,7 @@ namespace LabelMaker.Accedian
 			string One = "1", Two = "2", Three = "3", Four = "4", Five = "5", Six = "6", Seven = "7", Eight = "8", Nine = "9", Ten = "10";
 
 			serials += string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10}", One, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten, Environment.NewLine);
-			
+
 			// Default values to be blank until assigned.
 			One = ""; Two = ""; Three = ""; Four = ""; Five = ""; Six = ""; Seven = ""; Eight = ""; Nine = ""; Ten = "";
 
@@ -262,7 +275,7 @@ namespace LabelMaker.Accedian
 						//Reset Values until assigned again.
 						One = ""; Two = ""; Three = ""; Four = ""; Five = ""; Six = ""; Seven = ""; Eight = ""; Nine = ""; Ten = "";
 						break;
-					#endregion
+						#endregion
 				}
 				if (i + 1 >= columns && x != 11)
 				{
@@ -273,8 +286,14 @@ namespace LabelMaker.Accedian
 					x = 1;
 				}
 			}
-				return serials;
+			return serials;
 		}
+
+		public static string getPartNumberAndSerial()
+        {
+			return (accedian_list[0].SN.Length > 0) ?
+				(accedian_list[0].PN + "_" + accedian_list[0].SN) : accedian_list[0].PN;
+        }
 
 		/// <summary>
 		/// Save the Info from the output grid in the following format: Line Number, Part Number, Serial Number, Part Description, Label Description
@@ -294,7 +313,7 @@ namespace LabelMaker.Accedian
 				SN = accedian_array[i - 1].SN;
 				PDES = accedian_array[i - 1].PartDes;
 				LDES = accedian_array[i - 1].LabelDes;
-                CNT = accedian_array[i - 1].Country;
+				CNT = accedian_array[i - 1].Country;
 
 				Info += string.Format("{0},{1},{2},{3},{4},{5}{6}", LN, PN, SN, PDES, LDES, CNT, Environment.NewLine);
 			}
@@ -318,14 +337,14 @@ namespace LabelMaker.Accedian
 			for (int i = 0; i < info.Length - 1; i += 6)
 			{
 				int LN = currentRow;
-				string PN	= info[i + 1];
-				string SN	= info[i + 2];
+				string PN = info[i + 1];
+				string SN = info[i + 2];
 				string PDES = info[i + 3];
 				string LDES = info[i + 4];
-                string CNT = info[i + 5];
-                string OLD = info[i + 6];
+				string CNT = info[i + 5];
+				string OLD = info[i + 6];
 
-                accedian_list.Add(new AccedianInfo(LN, SN, PN, PDES, LDES, CNT, OLD));
+				accedian_list.Add(new AccedianInfo(LN, SN, PN, PDES, LDES, CNT, OLD));
 				currentRow += 1;
 			}
 			output_grid.ItemsSource = accedian_list;
@@ -336,32 +355,32 @@ namespace LabelMaker.Accedian
 
 		}
 
-        #region edit buttons
-        //edit buttons open requested label templates
-        //user has to be sands
-        private void Edit_SFPP_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\SFP+ Private Label_Accedian.btw";
-            Process.Start(file);
-        }
+		#region edit buttons
+		//edit buttons open requested label templates
+		//user has to be sands
+		private void Edit_SFPP_button_click(object sender, RoutedEventArgs e)
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\SFP+ Private Label_Accedian.btw";
+			Process.Start(file);
+		}
 
-        private void Edit_SFP_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\SFP Private Label_Accedian_1label.btw";
-            Process.Start(file);
-        }
+		private void Edit_SFP_button_click(object sender, RoutedEventArgs e)
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\SFP Private Label_Accedian_1label.btw";
+			Process.Start(file);
+		}
 
-        private void Edit_QSFPLR_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\QSFP Private Label_Accedian - LR4.btw";
-            Process.Start(file);
-        }
+		private void Edit_QSFPLR_button_click(object sender, RoutedEventArgs e)
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\QSFP Private Label_Accedian - LR4.btw";
+			Process.Start(file);
+		}
 
-        private void Edit_QSFPSR_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\QSFP Private Label_Accedian - SR4.btw";
-            Process.Start(file);
-        }
+		private void Edit_QSFPSR_button_click(object sender, RoutedEventArgs e)
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\QSFP Private Label_Accedian - SR4.btw";
+			Process.Start(file);
+		}
 
 		private void Edit_QSFPER_button_click(object sender, RoutedEventArgs e)
 		{
@@ -370,52 +389,93 @@ namespace LabelMaker.Accedian
 		}
 
 		private void Edit_SMALL_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Small Accedian labels.btw";
-            Process.Start(file);
-        }
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Small Accedian labels.btw";
+			Process.Start(file);
+		}
 
-        private void Edit_BIG_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Big Accedian labels_Sheet.btw";
-            Process.Start(file);
-        }
+		private void Edit_BIG_button_click(object sender, RoutedEventArgs e)
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Big Accedian labels_Sheet.btw";
+			Process.Start(file);
+		}
 
-        private void Edit_10_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Accedian 10 Lables.btw";
-            Process.Start(file);
-        }
+		private void Edit_10_button_click(object sender, RoutedEventArgs e)
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Accedian 10 Lables.btw";
+			Process.Start(file);
+		}
 
-        private void Edit_R4_BIG_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Big Accedian labels_rev.04.btw";
-            Process.Start(file);
-        }
+		private void Edit_R4_BIG_button_click(object sender, RoutedEventArgs e)
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Big Accedian labels_rev.04.btw";
+			Process.Start(file);
+		}
 
-        private void Edit_R4_SFPP_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\SFPP_Accedian_Label rev.04.btw";
-            Process.Start(file);
-        }
+		private void Edit_R4_SFPP_button_click(object sender, RoutedEventArgs e)
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\SFPP_Accedian_Label rev.04.btw";
+			Process.Start(file);
+		}
 
-        private void Edit_RecodeSheet_button_click(object sender, RoutedEventArgs e)
-        {
-            string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Recode Sheet.btw";
-            Process.Start(file);
-        }
-        #endregion
+		private void Edit_RecodeSheet_button_click(object sender, RoutedEventArgs e)
+		{
+			string file = @"C:\Users\sands\PICS Telecom\Sandstone Technologies - Sandstone Software Applications\Label God Resources\Accedian\Accedian Label Maker\Recode Sheet.btw";
+			Process.Start(file);
+		}
+		#endregion
 
-        private void Search_textBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
+		private void Search_textBox_TextChanged(object sender, TextChangedEventArgs e)
+		{
 			SandstormMongoDriver driver = new SandstormMongoDriver(SandstormMongoDriver.CONNECTION_STRING);
 			var accedianParts = driver.GetAccedianParts(Search_textBox.Text);
 			input_grid.ItemsSource = accedianParts;
-        }
+		}
 
-        private void ToggleButton_Checked_1(object sender, RoutedEventArgs e)
-        {
+		private void ToggleButton_Checked_1(object sender, RoutedEventArgs e)
+		{
 
-        }
-    }
+		}
+
+		private void Load_MenuItem_Click(object sender, RoutedEventArgs e)
+		{
+			OpenFileDialog openFileDialog = new OpenFileDialog();
+			if (openFileDialog.ShowDialog() != true)
+			{
+				return;
+			}
+			string fileName = openFileDialog.FileName;
+			StreamReader fileReader = new StreamReader(fileName);
+			// Consume the first line with headers
+			var header_line = fileReader.ReadLine();
+			List<AccedianInfo> partEntries = new List<AccedianInfo>();
+			// Readlines until the end of the file
+			output_grid.Items.Refresh();
+			while (fileReader.Peek() >= 0)
+			{
+				try
+				{
+					String line = fileReader.ReadLine();
+					String[] pieces = line.Split(',');
+					AccedianInfo currentPart = new AccedianInfo(
+							Int32.Parse(pieces[0]),
+							pieces[1],
+							pieces[2],
+							pieces[3],
+							pieces[4],
+							pieces[5]
+						);
+
+					partEntries.Add(currentPart);
+				} catch (Exception exception)
+                {
+					MessageBox.Show("File has the wrong format.\n\n" + exception.Message);
+					return;
+                }
+			}
+			accedian_list = partEntries;
+			output_grid.ItemsSource = accedian_list;
+			output_grid.Items.Refresh();
+		}
+	}
 }

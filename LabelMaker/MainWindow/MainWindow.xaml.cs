@@ -18,11 +18,19 @@ using Npgsql;
 using Renci.SshNet;
 using System.Text.Json.Serialization;
 using Newtonsoft.Json;
+using Microsoft.Win32;
+using MongoDB.Bson;
+using System.Text.RegularExpressions;
+
 
 namespace LabelMaker
 {
+    
     public partial class MainWindow : Window
     {
+        public static string PART_DIRECTORY = @"C:\\LabelMaker\\PARTS\\";
+        public static string RECORD_DIRECTORY = @"C:\\LabelMaker\\Records\\Normal";
+        
         public MainWindow()
         {
             try { InitializeComponent(); }
@@ -48,8 +56,11 @@ namespace LabelMaker
             setRoutedCommands();
             Labels.fileLoc_statBar_rec = fileLocation_statusBarItem;
             Labels.fileLoc_statBar_rec.Content = Labels.SaveLocationProperty;
-            createDir(@"C:\\LabelMaker\\PARTS\\");
+            // Location to save parts
+            createDir(PART_DIRECTORY);
 
+            // Location to save records (label info)
+            createDir(RECORD_DIRECTORY);
         }
 
         /// <summary>
@@ -197,7 +208,7 @@ namespace LabelMaker
         }
 
         //create a directory if not already done so
-        private void createDir(string s)
+        public static void createDir(string s)
         {
             if (Directory.Exists(s))
             {
@@ -233,6 +244,36 @@ namespace LabelMaker
         //function to add parts by serial number from first to last
         private void addConsecSN_Button_Click(object sender, RoutedEventArgs e)
         {
+            int serial1Bad = ValidateSerialNumber(SerialCons1_textBox.Text);
+            int serial2Bad = ValidateSerialNumber(SerialCons2_textBox.Text);
+            string errorSummary = "";
+            if (serial1Bad != serial2Bad)
+            {
+                errorSummary = "Multiple problems";
+            } else
+            {
+                switch (serial1Bad)
+                {
+                    case -3:
+                        errorSummary = "Incorrect day";
+                        break;
+                    case -2:
+                        errorSummary = "Invalid month";
+                        break;
+                    case -1:
+                        errorSummary = "Bad format";
+                        break;
+                }
+            }
+            MessageBoxResult result;
+            if (serial1Bad != 0 || serial2Bad != 0)
+            {
+                result = MessageBox.Show("Serials do not follow Sandstone Template.\n Do you still want to add them?", $"Bad serials ({errorSummary})", MessageBoxButton.OKCancel, MessageBoxImage.Warning, MessageBoxResult.Cancel);
+                if (result == MessageBoxResult.Cancel) return;
+            }
+
+            
+
             output_grid.ItemsSource = null;
             try
             {
@@ -512,25 +553,98 @@ namespace LabelMaker
         //function that opens and selects data from database
         private void Database_Load()
         {
-            conn = new NpgsqlConnection(connstring);
-            try
+            // Load the part from the database
+            string partText = Part_textBox.Text;
+
+            if (partText.Length < 1)
             {
-                load_grid.ItemsSource = null;
-                conn.Open();
-                sql = "SELECT * FROM parts";
-                cmd = new NpgsqlCommand(sql, conn);
-                dt = new DataTable();
-                dt.Load(cmd.ExecuteReader());
-                load_grid.ItemsSource = dt.DefaultView;
-                conn.Close();
+                MessageBox.Show("Enter a part before loading from the database.", "No Part Entered");
+                return;
             }
-            catch (Exception ex)
+
+            SandstormMongoDriver sandstormMongoDriver = new SandstormMongoDriver(SandstormMongoDriver.CONNECTION_STRING);
+            BsonDocument doc = sandstormMongoDriver.GetPartBson(partText);
+
+            
+
+            if (doc == null)
             {
-                MessageBox.Show("Error: " + ex.Message, "Fail", MessageBoxButton.OK);
-                conn.Close();
+                MessageBox.Show(partText + " could not be found in the database.");
+                return;
             }
+            string result_partType       = (string) doc["Form Factor"];
+            string result_dataRate       = (string) doc["Generic Rate"];
+            string result_wdm            = (string) ((doc["WDM"] == BsonNull.Value) ? "" : doc["WDM"]);
+            string result_wavelength     = (string)((doc["Full Wavelength"] == BsonNull.Value) ? "" : doc["Full Wavelength"]);
+            string result_media          = (string) ((doc["Media"] == BsonNull.Value) ? "" : doc["Media"]);
+            double result_distance       = (double) ((doc["Distance"] == BsonNull.Value) ? 0 : doc["Distance"]);
+            string result_distance_units = (string) ((doc["Distance Units"] == BsonNull.Value) ? 0 : doc["Distance Units"]);
+            string result_temp           = (string) ((doc["Full Temp"] == BsonNull.Value) ? "" : doc["Full Temp"]);
+
+            // Do intermediate calculations to turn values from database into proper textbox fields
+            string full_distance = (result_distance != 0) ? result_distance.ToString() + result_distance_units.ToUpper()[0] : "";
+            string full_media = (result_media.ToUpper()).Replace("F", "");
+            string full_temp = (result_temp).ToUpper();
+
+
+            // Enter part information into respective fields
+            Type_comboBox.SelectedItem = result_partType.Trim() ;
+            DataRate_comboBox.SelectedItem = result_dataRate.Trim();
+            WDM_comboBox.SelectedItem = result_wdm.Trim();
+            Wave_comboBox.SelectedItem = result_wavelength.Trim();
+            SMMM_comboBox.SelectedItem = full_media.Trim();
+            Dist_comboBox.SelectedItem = full_distance.Trim();
+            Temp_comboBox.SelectedItem = full_temp.Trim();
         }
         #endregion
+        // Defines whether or not a serial number follows the Sandstone Template
+        public int ValidateSerialNumber(string serial)
+        {
+            const string serialPattern = @"^([A-Z]+)(\d{2})(\d{2})(\d{2})(\d{4})$";
+            Regex serialRegex = new Regex(serialPattern, RegexOptions.Compiled);
+            MatchCollection serialMatches = serialRegex.Matches(serial);
+            if (serialMatches.Count < 1)
+            {
+                // -1 Meaning that ther serial is not a Sandstone Template
+                return -1;
+            }
+            GroupCollection groups = serialMatches[0].Groups;
+            string manufacturer_piece = groups[1].Value;
+            string year_piece = groups[2].Value;
+            string month_piece = groups[3].Value;
+            string day_piece = groups[4].Value;
+            string id_piece = groups[5].Value;
+
+            int[] days_in_months = { 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+            int month_num = Int32.Parse(month_piece);
+            int day_num = Int32.Parse(day_piece);
+
+            if (month_num < 0 || month_num > 12)
+            {
+                return -2;
+            }
+
+            int correct_num_days = days_in_months[month_num - 1];
+
+            if (day_num > correct_num_days)
+            {
+                return -3;
+            }
+
+            return 0;
+
+
+
+           
+
+
+
+
+
+
+        }
+        
 
         #region excel load
         //fills data grid with all label information from an excel file
@@ -737,6 +851,7 @@ namespace LabelMaker
             String LJson = JsonConvert.SerializeObject(L);
             createFile(@"C:\\LabelMaker\\PARTS\\" + L.PN + ".json", LJson);
             //createFile(@"C:\\Users\\sands\\PICS Telecom\\Sandstone Technologies -Sandstone Software Applications\\Label God Resources\\PARTS" + L.PN + ".json", LJson);
+            
         }
         private void Reset_Button_Click(object sender, RoutedEventArgs e)
         {
@@ -779,6 +894,51 @@ namespace LabelMaker
         private void label_combobox_SelectionChanged_1(object sender, SelectionChangedEventArgs e)
         {
             //fix error
+        }
+
+        private void Load_Info_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            if (openFileDialog.ShowDialog() == true)
+            {
+                string fileName = openFileDialog.FileName;
+                StreamReader fileReader = new StreamReader(fileName);
+                // Consume the first line with headers
+                fileReader.ReadLine();
+                List<LabelInfo> partEntries = new List<LabelInfo>();
+                // Readlines until the end of the file
+                output_grid.Items.Refresh();
+                while (fileReader.Peek() >= 0)
+                {
+                    try
+                    {
+                        String line = fileReader.ReadLine();
+                        String[] pieces = line.Split(',');
+                        LabelInfo currentPart = new LabelInfo(
+                                Int32.Parse(pieces[0]),
+                                pieces[1],
+                                pieces[2],
+                                pieces[3],
+                                pieces[4],
+                                pieces[5],
+                                pieces[6],
+                                pieces[7],
+                                pieces[8],
+                                pieces[9]
+                            );
+
+                        partEntries.Add(currentPart);
+                    }
+                    catch (Exception exception)
+                    {
+                        MessageBox.Show("File has the wrong format.\n\n" + exception.Message);
+                        return;
+                    }
+                }
+                Labels.label_list = partEntries;
+                output_grid.ItemsSource = Labels.label_list;
+                output_grid.Items.Refresh();
+            }
         }
     }
 }

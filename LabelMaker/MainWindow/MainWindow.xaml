@@ -245,6 +245,7 @@
         <Button Content="PRINT" HorizontalAlignment="Left" Height="33" Margin="814,10,0,0" Grid.Row="6" VerticalAlignment="Top" Width="63" Click="Print_Button_Click"/>
         <Button Content="EDIT" HorizontalAlignment="Left" Margin="709,48,0,0" Grid.Row="6" VerticalAlignment="Top" Width="63" Click="Edit_Label_Click"/>
         <Button Content="TEST" HorizontalAlignment="Left" Margin="814,48,0,0" Grid.Row="6" VerticalAlignment="Top" Width="63" Click="Test_Label_Click"/>
+        <Button Content="Load Label Info" HorizontalAlignment="Left" Margin="169,14,0,0" Grid.Row="4" VerticalAlignment="Top" Width="89" Click="Load_Info_Click"/>
 
     </Grid>
 </Window>

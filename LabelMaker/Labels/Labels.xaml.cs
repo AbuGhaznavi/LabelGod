@@ -135,7 +135,8 @@ namespace LabelMaker
             string CNT = "Country", OldPN = "Old Part", BRK = "Breakout Quantity", SE = "Second End";
             Info += string.Format("{0},{1},{2},{3},{4},{5},{6},{7},{8},{9}", LN, PN, SN, DES, REV, CNT, OldPN, BRK, SE, Environment.NewLine);
 			LabelInfo[] label_array = label_list.ToArray();
-			for (int i = 1; i < currentRow && i <= label_array.Length; i++)
+            // for (int i = 1; i < currentRow && i <= label_array.Length; i++)
+            for (int i = 1; i <= label_array.Length; i++)
             {
                 LN    = label_array[i - 1].LN.ToString();
                 PN    = label_array[i - 1].PN;
@@ -152,12 +153,25 @@ namespace LabelMaker
             return Info;
         }
 
-		/// <summary>
-		/// Gets all of the info from the save file and returns it in a List form.
-		/// </summary>
-		/// <param name="Info"> the string found in the last save file </param>
-		/// <returns>List with all of the parts and serial numbers last saved</returns>
-		public static List<LabelInfo> storeAllInfo(string Info)
+        public static string getPartNumber()
+        {
+            LabelInfo[] label_array = label_list.ToArray();
+            return label_array[0].PN.ToString().Trim();
+        }
+
+        public static string getPartNumberAndSerial()
+        {
+            LabelInfo[] label_array = label_list.ToArray();
+            string[] joined_elements = { label_array[0].PN.ToString(), label_array[0].SN.ToString() };
+            return String.Join("_", joined_elements).ToString();
+        }
+
+        /// <summary>
+        /// Gets all of the info from the save file and returns it in a List form.
+        /// </summary>
+        /// <param name="Info"> the string found in the last save file </param>
+        /// <returns>List with all of the parts and serial numbers last saved</returns>
+        public static List<LabelInfo> storeAllInfo(string Info)
 		{
 			Info = Info.Remove(0, 57);
 			Info = Info.Replace(System.Environment.NewLine, ",");

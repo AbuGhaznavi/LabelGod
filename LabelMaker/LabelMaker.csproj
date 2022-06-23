@@ -207,6 +207,7 @@
     <Compile Include="Labels\Labels.FillComboBoxes.cs" />
     <Compile Include="Labels\Labels.MenuItems.cs" />
     <Compile Include="MainWindow.FillComboBoxes.cs" />
+    <Compile Include="PartEntry.cs" />
     <Compile Include="Part.cs" />
     <Compile Include="Region Select\RegionSelect.xaml.cs">
       <DependentUpon>RegionSelect.xaml</DependentUpon>

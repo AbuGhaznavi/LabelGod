@@ -26,6 +26,12 @@ namespace LabelMaker
             string save_file_name = filename;
             string save_file_name_path = Path.Combine(mainFolder, save_file_name);
             File.WriteAllText(save_file_name_path, info);
+            // Use the current date time for saving this set of records
+            var dateString = DateTime.Now.ToString("yy-MM-dd");
+            File.WriteAllText(
+                Path.Combine(MainWindow.RECORD_DIRECTORY, getPartNumberAndSerial() + "_" + dateString + "_" + save_file_name),
+                info
+                );
             
         }
 

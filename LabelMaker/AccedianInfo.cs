@@ -26,5 +26,17 @@ namespace LabelMaker.Accedian
             Country = ct;
             OLDPN = old;
 		}
+
+		// Overload to allow csv parsing since OLD part number is not saved
+		public AccedianInfo(int ln, string sn, string pn, string pd, string ld, string ct)
+		{
+			LN = ln;
+			SN = sn;
+			PN = pn;
+			PartDes = pd;
+			LabelDes = ld;
+			Country = ct;
+			OLDPN = "";
+		}
 	}
 }
