@@ -196,7 +196,7 @@ namespace LabelMaker.Accedian
 			string info = getAllInfo();
 			string serial = getAllSerials();
 			string partAndSerial = getPartNumberAndSerial();
-			File.WriteAllText(save_file_name_path, info);
+			//File.WriteAllText(save_file_name_path, info);
 			File.WriteAllText(ten_save_file_name_path, serial);
 
 			// Save the record into the accedian folder
@@ -459,8 +459,8 @@ namespace LabelMaker.Accedian
 					String[] pieces = line.Split(',');
 					AccedianInfo currentPart = new AccedianInfo(
 							Int32.Parse(pieces[0]),
-							pieces[1],
 							pieces[2],
+							pieces[1],
 							pieces[3],
 							pieces[4],
 							pieces[5]
